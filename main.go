@@ -14,6 +14,7 @@ type simpleServer struct {
 	proxy *httputil.ReverseProxy // Входящий запрос направляет на другие сервера
 }
 
+// Server Интерфейс для описания сервера
 type Server interface {
 	Address() string
 	IsAlive() bool
@@ -26,6 +27,7 @@ type LoadBalancer struct {
 	servers    []Server
 }
 
+// Создание сервера соответствующего интерфейсу Server
 func newSimpleServer(addr string) *simpleServer {
 	serverUrl, err := url.Parse(addr)
 	handleError(err)
@@ -36,6 +38,7 @@ func newSimpleServer(addr string) *simpleServer {
 	}
 }
 
+// NewLoadBalancer Создать новый балансировщик
 func NewLoadBalancer(port string, servers []Server) *LoadBalancer {
 	return &LoadBalancer{
 		port:       port,
@@ -44,6 +47,7 @@ func NewLoadBalancer(port string, servers []Server) *LoadBalancer {
 	}
 }
 
+// Управление ошибками
 func handleError(err error) {
 	if err != nil {
 		fmt.Printf("Ошибка %v\n", err)
@@ -51,14 +55,17 @@ func handleError(err error) {
 	}
 }
 
+// Address Получение адреса сервера
 func (s *simpleServer) Address() string { return s.addr }
 
+// IsAlive Узнать жив ли сервер
 func (s *simpleServer) IsAlive() bool { return true }
 
 func (s *simpleServer) Server(w http.ResponseWriter, r *http.Request) {
 	s.proxy.ServeHTTP(w, r)
 }
 
+// Получение доступных серверов
 func (lb *LoadBalancer) getNextAvailableServer() Server {
 	server := lb.servers[lb.roundCount%len(lb.servers)]
 	for !server.IsAlive() {
@@ -69,6 +76,7 @@ func (lb *LoadBalancer) getNextAvailableServer() Server {
 	return server
 }
 
+// Запуск сервера через прокси
 func (lb *LoadBalancer) serveProxy(w http.ResponseWriter, r *http.Request) {
 	targetServer := lb.getNextAvailableServer()
 	fmt.Printf("Отправка на адрес %v\n", targetServer.Address())
@@ -80,12 +88,12 @@ func main() {
 		newSimpleServer("https://ya.ru"),
 		newSimpleServer("https://mail.ru"),
 		newSimpleServer("https://github.com"),
-	}
-	lb := NewLoadBalancer("8000", servers)
+	} //Добавление списка серверов
+	lb := NewLoadBalancer("8000", servers) //Создание нового балансировщика
 	handleRedirect := func(w http.ResponseWriter, r *http.Request) {
 		lb.serveProxy(w, r)
-	}
-	http.HandleFunc("/", handleRedirect)
+	} //Редирект когда набирается адрес
+	http.HandleFunc("/", handleRedirect) //Привязка редиректа
 	fmt.Printf("Обслуживаение реквестов на порту %v\n", lb.port)
-	http.ListenAndServe(":"+lb.port, nil)
+	http.ListenAndServe(":"+lb.port, nil) //запуск прослушки сервера по порту
 }
