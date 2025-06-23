@@ -61,6 +61,7 @@ func (s *simpleServer) Address() string { return s.addr }
 // IsAlive Узнать жив ли сервер
 func (s *simpleServer) IsAlive() bool { return true }
 
+// Server Делает пересылку запросов
 func (s *simpleServer) Server(w http.ResponseWriter, r *http.Request) {
 	s.proxy.ServeHTTP(w, r)
 }
@@ -85,7 +86,7 @@ func (lb *LoadBalancer) serveProxy(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	servers := []Server{
-		newSimpleServer("https://ya.ru"),
+		newSimpleServer("https://yandex.ru"),
 		newSimpleServer("https://mail.ru"),
 		newSimpleServer("https://github.com"),
 	} //Добавление списка серверов
